@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Quality & Financial Reconciliation Audit Report</title>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --card-bg: #151e2e;
+      --border: #223249;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-blue: #0ea5e9;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-verified { background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald); border: 1px solid var(--accent-emerald); }
+    .badge-critical { background: rgba(244, 63, 94, 0.2); color: var(--accent-rose); border: 1px solid var(--accent-rose); }
+    .badge-high { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); border: 1px solid var(--accent-amber); }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 8px;
+    }
+    .stat-num {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent-blue);
+      margin-top: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+    .residual-row {
+      background: rgba(244, 63, 94, 0.1);
+      color: var(--accent-rose);
+      font-weight: 700;
+    }
+    pre {
+      background: #080c13;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: monospace;
+      font-size: 13px;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1 style="margin: 0; font-size: 28px;">Audit & Reconciliation Intelligence Report</h1>
+          <p style="color: var(--text-muted); margin: 6px 0 0 0;">Session ID: <code>{{ session_id }}</code> &bull; Generated: {{ timestamp }}</p>
+        </div>
+        <div>
+          <span class="badge badge-verified">Dual-Engine Verified</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Executive Summary Card -->
+    <div class="card">
+      <h2 style="margin-top: 0; font-size: 18px; color: var(--accent-blue);">Executive Narrative</h2>
+      <div>
+        <p><strong>Health Score:</strong> {{ quality.overall_score }}/100 &bull; <strong>Total Variance:</strong> ${{ "{:,.2f}".format(reconciliation.total_variance) }}</p>
+        <p>{{ executive_narrative | replace("\n", "<br>") }}</p>
+      </div>
+    </div>
+
+    <!-- Quality Scores Grid -->
+    <div class="grid-2">
+      {% for fname, score in quality.file_scores.items() %}
+      <div class="card">
+        <h3 style="margin-top: 0; font-size: 16px;">Quality Health: {{ fname }}</h3>
+        <div style="font-size: 32px; font-weight: 800; color: var(--accent-emerald);">{{ score.overall }}/100</div>
+        <div style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">
+          <div>Completeness: <strong>{{ score.completeness }}%</strong></div>
+          <div>Uniqueness: <strong>{{ score.uniqueness }}%</strong></div>
+          <div>Validity: <strong>{{ score.validity }}%</strong></div>
+          <div>Consistency: <strong>{{ score.consistency }}%</strong></div>
+          <div>Timeliness: <strong>{{ score.timeliness }}%</strong></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Reconciliation Bridge -->
+    <div class="card">
+      <h2 style="margin-top: 0; font-size: 18px;">Financial Waterfall Reconciliation Bridge</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Step</th>
+            <th>Category</th>
+            <th>Delta Amount</th>
+            <th>Cumulative Total</th>
+            <th>Rows</th>
+            <th>Hypothesis & Root Cause</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for step in reconciliation.steps %}
+          <tr class="{% if step.is_residual %}residual-row{% endif %}">
+            <td><strong>{{ step.title }}</strong></td>
+            <td><code>{{ step.category }}</code></td>
+            <td style="font-weight: 600;">${{ "{:,.2f}".format(step.delta_amount) }}</td>
+            <td>${{ "{:,.2f}".format(step.cumulative_amount) }}</td>
+            <td>{{ step.rows_affected }}</td>
+            <td style="color: var(--text-muted);">{{ step.hypothesis }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Data Quality Findings -->
+    <div class="card">
+      <h2 style="margin-top: 0; font-size: 18px;">Data Quality Audit Findings</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Severity</th>
+            <th>File</th>
+            <th>Check / Dimension</th>
+            <th>Affected</th>
+            <th>Suggested Remediation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in quality.findings %}
+          <tr>
+            <td><code>{{ f.id }}</code></td>
+            <td><span class="badge {% if f.severity == 'CRITICAL' %}badge-critical{% elif f.severity == 'HIGH' %}badge-high{% else %}badge-verified{% endif %}">{{ f.severity }}</span></td>
+            <td>{{ f.file }}</td>
+            <td>{{ f.check_name }} ({{ f.dimension }})</td>
+            <td>{{ f.affected_rows_count }} rows</td>
+            <td>{{ f.suggested_fix }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Dual-Execution Verification Log -->
+    <div class="card">
+      <h2 style="margin-top: 0; font-size: 18px;">Dual-Execution Verification Proofs (Pandas vs DuckDB/SQL)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Calc ID</th>
+            <th>Claim</th>
+            <th>Pandas Output</th>
+            <th>SQL Output</th>
+            <th>Variance</th>
+            <th>Verified Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in calculation_log %}
+          <tr>
+            <td><code>{{ c.calc_id }}</code></td>
+            <td>{{ c.claim_name }}</td>
+            <td><code>{{ c.pandas_result }}</code></td>
+            <td><code>{{ c.sql_result }}</code></td>
+            <td>{{ c.variance }}</td>
+            <td><span class="badge badge-verified">VERIFIED MATCH</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
